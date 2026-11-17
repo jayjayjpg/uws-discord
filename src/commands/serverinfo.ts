@@ -1,6 +1,6 @@
 import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
-import { getMessageCount, getTotalTrackedMessages } from "../db/index.js";
+import { getMessageCount, getTotalTrackedMessages } from "../db/engagement.js";
 
 const command: Command = {
   data: new SlashCommandBuilder().setName("serverinfo").setDescription("Show server stats and your tracked activity."),
@@ -8,8 +8,8 @@ const command: Command = {
     if (!interaction.guild) return;
     const guild = interaction.guild;
 
-    const myMessages = getMessageCount(guild.id, interaction.user.id);
-    const totalTracked = getTotalTrackedMessages(guild.id);
+    const myMessages = await getMessageCount(guild.id, interaction.user.id);
+    const totalTracked = await getTotalTrackedMessages(guild.id);
 
     const embed = new EmbedBuilder()
       .setTitle(guild.name)

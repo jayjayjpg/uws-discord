@@ -3,7 +3,8 @@ import { fileURLToPath } from "node:url";
 import { Client, Collection, GatewayIntentBits } from "discord.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
-import "./db/index.js"; // initializes the SQLite file + schema as a side effect
+import { connectDatabase } from "./db/client.js";
+import { scheduleRetentionJob } from "./modules/moderation/retention.js";
 import { loadServerMap } from "./config/serverMap.js";
 import { loadModules } from "./utils/loadFiles.js";
 import type { BotEvent, Command } from "./types.js";
@@ -23,9 +24,12 @@ export const client = new Client({
 client.commands = new Collection();
 
 async function bootstrap() {
+  await connectDatabase();
+  scheduleRetentionJob();
+
   if (!loadServerMap()) {
     logger.warn(
-      'No server-map.json found yet. Channel/role-aware features (tickets, verification, moderation logs, ...) will ' +
+      'No server-map.json found yet. Channel/role-aware features (verification, moderation logs, ...) will ' +
         'warn and no-op until you run `npm run setup:apply`.'
     );
   }

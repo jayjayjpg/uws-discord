@@ -1,8 +1,8 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
 import { isModeratorOrAbove } from "../utils/permissions.js";
-import { addWarning } from "../db/index.js";
-import { postModLog } from "../services/moderation.js";
+import { addWarning } from "../db/warnings.js";
+import { postModLog } from "../modules/moderation/modLog.js";
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -21,7 +21,7 @@ const command: Command = {
     const target = interaction.options.getUser("user", true);
     const reason = interaction.options.getString("reason", true);
 
-    addWarning(interaction.guild.id, target.id, interaction.user.id, reason);
+    await addWarning(interaction.guild.id, target.id, interaction.user.id, reason);
     await postModLog(interaction.guild, {
       action: "⚠️ Warn",
       target: { id: target.id, tag: target.tag },

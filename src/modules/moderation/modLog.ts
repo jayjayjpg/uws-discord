@@ -1,6 +1,6 @@
 import { EmbedBuilder, type Guild } from "discord.js";
-import { loadServerMap } from "../config/serverMap.js";
-import { logger } from "../logger.js";
+import { loadServerMap } from "../../config/serverMap.js";
+import { logger } from "../../logger.js";
 
 export interface ModLogEntry {
   action: string;
@@ -13,11 +13,11 @@ export interface ModLogEntry {
 /** Posts a standardized embed to #moderator-log. No-ops (with a warning) if setup hasn't run yet. */
 export async function postModLog(guild: Guild, entry: ModLogEntry): Promise<void> {
   const map = loadServerMap();
-  if (!map?.channels.moderatorLog) {
+  if (!map?.channels.moderationLog) {
     logger.warn("No moderator-log channel mapped yet — run the setup script. Skipping mod log post.");
     return;
   }
-  const channel = await guild.channels.fetch(map.channels.moderatorLog).catch(() => null);
+  const channel = await guild.channels.fetch(map.channels.moderationLog).catch(() => null);
   if (!channel || !channel.isTextBased()) return;
 
   const embed = new EmbedBuilder()

@@ -1,4 +1,4 @@
-import { type CategoryChannel, ChannelType, type Guild, PermissionsBitField, type TextChannel } from "discord.js";
+import { type CategoryChannel, ChannelType, type Guild, PermissionsBitField, type TextChannel, type VoiceChannel } from "discord.js";
 import { CATEGORY_BLUEPRINT, ROLE_BLUEPRINT } from "../config/blueprint.js";
 import type { PermissionFlag, RoleKey, RoleOverwrite } from "../config/types.js";
 import { emptyServerMap, loadServerMap, saveServerMap, type ServerMap } from "../config/serverMap.js";
@@ -189,35 +189,41 @@ export async function runSetup(guild: Guild, options: SetupOptions): Promise<Set
     }
 
     for (const channelBp of categoryBp.channels) {
+      const isVoice = channelBp.type === "voice";
+      const discordType = isVoice ? ChannelType.GuildVoice : ChannelType.GuildText;
+      const label = isVoice ? `voice "${channelBp.name}"` : `#${channelBp.name}`;
+
       let channel = guild.channels.cache.find(
-        (c) => c.type === ChannelType.GuildText && c.parentId === (category?.id ?? null) && c.name === channelBp.name
-      ) as TextChannel | undefined;
+        (c) => c.type === discordType && c.parentId === (category?.id ?? null) && c.name === channelBp.name
+      ) as TextChannel | VoiceChannel | undefined;
 
       if (!channel) {
-        plan.push({ kind: "channel", key: channelBp.key, action: "create", description: `Create #${channelBp.name} in "${categoryBp.name}".` });
+        plan.push({ kind: "channel", key: channelBp.key, action: "create", description: `Create ${label} in "${categoryBp.name}".` });
         if (apply) {
           channel = await guild.channels.create({
             name: channelBp.name,
-            type: ChannelType.GuildText,
+            type: discordType,
             parent: category?.id,
-            topic: channelBp.topic,
-            nsfw: channelBp.nsfw ?? false,
+            topic: isVoice ? undefined : channelBp.topic,
+            nsfw: isVoice ? undefined : channelBp.nsfw ?? false,
             reason: "UWS setup script",
           });
         }
-      } else {
+      } else if (!isVoice && "setTopic" in channel) {
         const topicDiffers = channelBp.topic !== undefined && (channel.topic ?? undefined) !== channelBp.topic;
         if (topicDiffers) {
-          plan.push({ kind: "channel", key: channelBp.key, action: "update", description: `Update topic on #${channelBp.name}.` });
+          plan.push({ kind: "channel", key: channelBp.key, action: "update", description: `Update topic on ${label}.` });
           if (apply) await channel.setTopic(channelBp.topic ?? null, "UWS setup script");
         } else {
-          plan.push({ kind: "channel", key: channelBp.key, action: "skip", description: `#${channelBp.name} already exists.` });
+          plan.push({ kind: "channel", key: channelBp.key, action: "skip", description: `${label} already exists.` });
         }
+      } else {
+        plan.push({ kind: "channel", key: channelBp.key, action: "skip", description: `${label} already exists.` });
       }
       if (channel) map.channels[channelBp.key] = channel.id;
 
       if (channel) {
-        await applyOverwrites(channel, categoryBp.overwrites, channelBp.overwrites, map, guild, plan, warnings, apply, `#${channelBp.name}`);
+        await applyOverwrites(channel, categoryBp.overwrites, channelBp.overwrites, map, guild, plan, warnings, apply, label);
       }
     }
   }
@@ -232,7 +238,7 @@ export async function runSetup(guild: Guild, options: SetupOptions): Promise<Set
 }
 
 async function applyOverwrites(
-  channel: CategoryChannel | TextChannel,
+  channel: CategoryChannel | TextChannel | VoiceChannel,
   categoryOverwrites: RoleOverwrite[],
   channelOverwrites: RoleOverwrite[] | undefined,
   map: ServerMap,

@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: uws
+      POSTGRES_PASSWORD: uws_dev_password
+      POSTGRES_DB: uws_discord
+    ports:
+      - "5432:5432"
+    volumes:
+      - uws_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uws -d uws_discord"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  uws_postgres_data:

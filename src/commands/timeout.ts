@@ -1,7 +1,7 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
 import { isModeratorOrAbove } from "../utils/permissions.js";
-import { postModLog } from "../services/moderation.js";
+import { postModLog } from "../modules/moderation/modLog.js";
 
 const command: Command = {
   data: new SlashCommandBuilder()

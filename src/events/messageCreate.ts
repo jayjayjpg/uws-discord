@@ -1,6 +1,6 @@
 import type { BotEvent } from "../types.js";
-import { runAutomod } from "../services/automod.js";
-import { bumpMessageCount } from "../db/index.js";
+import { runAutomod } from "../modules/moderation/automod.js";
+import { bumpMessageCount } from "../db/engagement.js";
 
 const event: BotEvent<"messageCreate"> = {
   name: "messageCreate",
@@ -10,7 +10,7 @@ const event: BotEvent<"messageCreate"> = {
     const actioned = await runAutomod(message);
     if (actioned) return;
 
-    bumpMessageCount(message.guild.id, message.author.id);
+    await bumpMessageCount(message.guild.id, message.author.id);
   },
 };
 

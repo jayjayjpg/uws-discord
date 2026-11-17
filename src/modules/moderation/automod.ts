@@ -1,7 +1,7 @@
 import type { Message } from "discord.js";
-import { isModeratorOrAbove } from "../utils/permissions.js";
-import { postModLog } from "./moderation.js";
-import { logger } from "../logger.js";
+import { isModeratorOrAbove } from "../../utils/permissions.js";
+import { postModLog } from "./modLog.js";
+import { logger } from "../../logger.js";
 
 const INVITE_REGEX = /(discord\.gg\/|discord(?:app)?\.com\/invite\/)[a-z0-9-]+/i;
 const MASS_MENTION_THRESHOLD = 5;
@@ -38,11 +38,13 @@ export async function runAutomod(message: Message): Promise<boolean> {
   await message.delete().catch(() => null);
   await message.author.send(`Your message in **${message.guild.name}** was removed by automod: ${reasons.join(", ")}.`).catch(() => null);
 
+  // Intentionally not logging message content here — policy is to avoid storing
+  // full member message content by default (see spec section 5 / 12).
   await postModLog(message.guild, {
     action: "🚫 Automod",
     target: { id: message.author.id, tag: message.author.tag },
     moderator: { id: message.client.user?.id ?? "0", tag: "Automod" },
-    reason: `${reasons.join("; ")} — content: ${message.content.slice(0, 200)}`,
+    reason: `${reasons.join("; ")} (message length: ${message.content.length} chars, deleted)`,
     color: 0x992d22,
   });
 

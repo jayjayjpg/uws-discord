@@ -33,3 +33,22 @@ export function memberMeetsRole(member: GuildMember, minimum: RoleKey): boolean 
 export const isModeratorOrAbove = (member: GuildMember): boolean => memberMeetsRole(member, "moderator");
 export const isCommunityManagerOrAbove = (member: GuildMember): boolean => memberMeetsRole(member, "communityManager");
 export const isAdministratorOrAbove = (member: GuildMember): boolean => memberMeetsRole(member, "administrator");
+
+/** Does this member hold ANY of the given roles (by blueprint key)? Administrator permission always passes. */
+export function hasAnyManagedRole(member: GuildMember, keys: RoleKey[]): boolean {
+  if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
+  const map = loadServerMap();
+  if (!map) return false;
+  return keys.some((key) => {
+    const id = map.roles[key];
+    return id && member.roles.cache.has(id);
+  });
+}
+
+/** Can this member propose a community event? (Facilitator, Event Host, Community Manager, or above) */
+export const isEventProposer = (member: GuildMember): boolean =>
+  hasAnyManagedRole(member, ["eventHost", "facilitator", "communityManager", "administrator", "founder"]);
+
+/** Can this member approve/publish/cancel any event outright? (Community Manager, or above) */
+export const isEventApprover = (member: GuildMember): boolean =>
+  hasAnyManagedRole(member, ["communityManager", "administrator", "founder"]);

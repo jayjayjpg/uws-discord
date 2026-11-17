@@ -1,10 +1,9 @@
 import type { BotEvent } from "../types.js";
 import { logger } from "../logger.js";
-import { ACCEPT_RULES_CUSTOM_ID, handleAcceptRules } from "../services/verification.js";
-import { SELF_ROLES_CUSTOM_ID, handleSelfRolesSelect } from "../services/selfRoles.js";
-import { TICKET_CLOSE_CUSTOM_ID, closeTicketChannel } from "../services/tickets.js";
-import { getTicketByChannel } from "../db/index.js";
-import { isModeratorOrAbove } from "../utils/permissions.js";
+import { ACKNOWLEDGE_GUIDELINES_CUSTOM_ID, handleAcknowledgeGuidelines } from "../modules/onboarding/guidelines.js";
+import { isSelfRolesCustomId, handleSelfRolesSelect } from "../modules/roles/selfRoles.js";
+import { isReportCustomId, handleReportReviewButton } from "../modules/moderation/reports.js";
+import { isEventReviewCustomId, handleEventReviewButton } from "../modules/events/eventService.js";
 
 const event: BotEvent<"interactionCreate"> = {
   name: "interactionCreate",
@@ -21,31 +20,22 @@ const event: BotEvent<"interactionCreate"> = {
       }
 
       if (interaction.isButton()) {
-        if (interaction.customId === ACCEPT_RULES_CUSTOM_ID) {
-          await handleAcceptRules(interaction);
+        if (interaction.customId === ACKNOWLEDGE_GUIDELINES_CUSTOM_ID) {
+          await handleAcknowledgeGuidelines(interaction);
           return;
         }
-
-        if (interaction.customId === TICKET_CLOSE_CUSTOM_ID) {
-          if (!interaction.inCachedGuild()) return;
-          const ticket = getTicketByChannel(interaction.channelId);
-          if (!ticket || ticket.status === "closed") {
-            await interaction.reply({ content: "This ticket is already closed.", ephemeral: true });
-            return;
-          }
-          const isOpener = ticket.opener_id === interaction.user.id;
-          if (!isOpener && !isModeratorOrAbove(interaction.member)) {
-            await interaction.reply({ content: "Only the ticket opener or staff can close this.", ephemeral: true });
-            return;
-          }
-          await interaction.reply("Closing ticket...");
-          await closeTicketChannel(interaction.guild, interaction.channelId, interaction.user.tag, interaction.user.id);
+        if (isReportCustomId(interaction.customId)) {
+          await handleReportReviewButton(interaction);
+          return;
+        }
+        if (isEventReviewCustomId(interaction.customId)) {
+          await handleEventReviewButton(interaction);
           return;
         }
         return;
       }
 
-      if (interaction.isStringSelectMenu() && interaction.customId === SELF_ROLES_CUSTOM_ID) {
+      if (interaction.isStringSelectMenu() && isSelfRolesCustomId(interaction.customId)) {
         await handleSelfRolesSelect(interaction);
         return;
       }
